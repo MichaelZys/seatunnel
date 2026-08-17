@@ -24,9 +24,11 @@ import javax.annotation.Nullable;
 public class SeaTunnelSparkWriterCommitMessage<T> implements WriterCommitMessage {
 
     private @Nullable T message;
+    private final long writtenCount;
 
-    SeaTunnelSparkWriterCommitMessage(T message) {
+    SeaTunnelSparkWriterCommitMessage(T message, long writtenCount) {
         this.message = message;
+        this.writtenCount = writtenCount;
     }
 
     public T getMessage() {
@@ -35,5 +37,9 @@ public class SeaTunnelSparkWriterCommitMessage<T> implements WriterCommitMessage
 
     public void setMessage(T message) {
         this.message = message;
+    }
+
+    public long getWrittenCount() {
+        return writtenCount;
     }
 }

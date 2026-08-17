@@ -18,13 +18,17 @@
 package org.apache.seatunnel.translation.spark.source.partition.batch;
 
 import org.apache.spark.sql.catalyst.InternalRow;
+import org.apache.spark.sql.connector.metric.CustomTaskMetric;
 import org.apache.spark.sql.connector.read.PartitionReader;
 
 import java.io.IOException;
 
+import static org.apache.seatunnel.translation.spark.metrics.SeaTunnelSparkMetrics.SOURCE_RECEIVED_COUNT;
+
 public class SeaTunnelBatchPartitionReader implements PartitionReader<InternalRow> {
 
     private final ParallelBatchPartitionReader partitionReader;
+    private long receivedCount;
 
     public SeaTunnelBatchPartitionReader(ParallelBatchPartitionReader partitionReader) {
         this.partitionReader = partitionReader;
@@ -36,8 +40,27 @@ public class SeaTunnelBatchPartitionReader implements PartitionReader<InternalRo
     }
 
     @Override
+    public CustomTaskMetric[] currentMetricsValues() {
+        return new CustomTaskMetric[] {
+            new CustomTaskMetric() {
+                @Override
+                public String name() {
+                    return SOURCE_RECEIVED_COUNT;
+                }
+
+                @Override
+                public long value() {
+                    return receivedCount;
+                }
+            }
+        };
+    }
+
+    @Override
     public InternalRow get() {
-        return partitionReader.get();
+        InternalRow row = partitionReader.get();
+        receivedCount++;
+        return row;
     }
 
     @Override

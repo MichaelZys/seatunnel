@@ -33,6 +33,8 @@ import org.apache.spark.sql.connector.write.WriterCommitMessage;
 import org.apache.spark.sql.connector.write.streaming.StreamingDataWriterFactory;
 import org.apache.spark.sql.connector.write.streaming.StreamingWrite;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -40,6 +42,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class SeaTunnelBatchWrite<StateT, CommitInfoT, AggregatedCommitInfoT>
         implements BatchWrite, StreamingWrite {
 
@@ -90,6 +93,7 @@ public class SeaTunnelBatchWrite<StateT, CommitInfoT, AggregatedCommitInfoT>
                 throw new RuntimeException("SinkAggregatedCommitter commit failed in driver", e);
             }
         }
+        log.info("SeaTunnel Spark metric: SinkWriteCount={}", sumWrittenCount(messages));
     }
 
     @Override
@@ -128,5 +132,12 @@ public class SeaTunnelBatchWrite<StateT, CommitInfoT, AggregatedCommitInfoT>
                         .filter(Objects::nonNull)
                         .collect(Collectors.toList());
         return Collections.singletonList(aggregatedCommitter.combine(commitInfos));
+    }
+
+    static long sumWrittenCount(WriterCommitMessage[] messages) {
+        return Arrays.stream(messages)
+                .map(m -> (SeaTunnelSparkWriterCommitMessage<?>) m)
+                .mapToLong(SeaTunnelSparkWriterCommitMessage::getWrittenCount)
+                .sum();
     }
 }
