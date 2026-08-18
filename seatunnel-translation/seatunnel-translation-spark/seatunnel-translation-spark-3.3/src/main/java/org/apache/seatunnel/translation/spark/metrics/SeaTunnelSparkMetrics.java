@@ -17,50 +17,35 @@
 
 package org.apache.seatunnel.translation.spark.metrics;
 
-import org.apache.spark.sql.connector.metric.CustomMetric;
+import org.apache.spark.sql.SparkSession;
+import org.apache.spark.util.LongAccumulator;
 
-import java.util.Arrays;
+import java.util.Map;
+import java.util.OptionalLong;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class SeaTunnelSparkMetrics {
 
     public static final String SOURCE_RECEIVED_COUNT = "SourceReceivedCount";
     public static final String SINK_WRITE_COUNT = "SinkWriteCount";
 
+    private static final Map<String, LongAccumulator> SOURCE_COUNTERS =
+            new ConcurrentHashMap<>();
+
     private SeaTunnelSparkMetrics() {}
 
-    public static final class SourceReceivedCountMetric implements CustomMetric {
-
-        @Override
-        public String name() {
-            return SOURCE_RECEIVED_COUNT;
-        }
-
-        @Override
-        public String description() {
-            return "The number of records successfully read by the SeaTunnel source";
-        }
-
-        @Override
-        public String aggregateTaskMetrics(long[] taskMetrics) {
-            return Long.toString(Arrays.stream(taskMetrics).sum());
-        }
+    public static LongAccumulator sourceCounter(String jobId) {
+        return SOURCE_COUNTERS.computeIfAbsent(
+                jobId,
+                ignored ->
+                        SparkSession.getActiveSession()
+                                .get()
+                                .sparkContext()
+                                .longAccumulator(SOURCE_RECEIVED_COUNT));
     }
 
-    public static final class SinkWriteCountMetric implements CustomMetric {
-
-        @Override
-        public String name() {
-            return SINK_WRITE_COUNT;
-        }
-
-        @Override
-        public String description() {
-            return "The number of records successfully accepted by the SeaTunnel sink writer";
-        }
-
-        @Override
-        public String aggregateTaskMetrics(long[] taskMetrics) {
-            return Long.toString(Arrays.stream(taskMetrics).sum());
-        }
+    public static OptionalLong takeSourceCount(String jobId) {
+        LongAccumulator counter = SOURCE_COUNTERS.remove(jobId);
+        return counter == null ? OptionalLong.empty() : OptionalLong.of(counter.value());
     }
 }

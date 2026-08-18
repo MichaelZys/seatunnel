@@ -23,13 +23,11 @@ import org.apache.seatunnel.api.table.type.SeaTunnelRow;
 import org.apache.seatunnel.api.table.type.SeaTunnelRowType;
 
 import org.apache.spark.sql.catalyst.expressions.GenericInternalRow;
-import org.apache.spark.sql.connector.metric.CustomTaskMetric;
 
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.apache.seatunnel.translation.spark.metrics.SeaTunnelSparkMetrics.SINK_WRITE_COUNT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -53,15 +51,9 @@ class SeaTunnelSparkDataWriterMetricTest {
 
         writer.write(new GenericInternalRow(new Object[] {1}));
 
-        CustomTaskMetric metric = writer.currentMetricsValues()[0];
-        assertEquals(SINK_WRITE_COUNT, metric.name());
-        assertEquals(1L, metric.value());
-
         doThrow(new IOException("expected failure")).when(sinkWriter).write(any());
         assertThrows(
                 IOException.class, () -> writer.write(new GenericInternalRow(new Object[] {2})));
-        assertEquals(1L, metric.value());
-
         SeaTunnelSparkWriterCommitMessage<?> commitMessage =
                 (SeaTunnelSparkWriterCommitMessage<?>) writer.commit();
         assertEquals(1L, commitMessage.getWrittenCount());

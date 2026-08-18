@@ -19,12 +19,11 @@ package org.apache.seatunnel.translation.spark.source.scan;
 
 import org.apache.seatunnel.api.source.SeaTunnelSource;
 import org.apache.seatunnel.api.table.type.SeaTunnelRow;
-import org.apache.seatunnel.translation.spark.metrics.SeaTunnelSparkMetrics.SourceReceivedCountMetric;
+import org.apache.seatunnel.translation.spark.metrics.SeaTunnelSparkMetrics;
 import org.apache.seatunnel.translation.spark.source.partition.batch.SeaTunnelBatch;
 import org.apache.seatunnel.translation.spark.source.partition.micro.SeaTunnelMicroBatch;
 import org.apache.seatunnel.translation.spark.utils.TypeConverterUtils;
 
-import org.apache.spark.sql.connector.metric.CustomMetric;
 import org.apache.spark.sql.connector.read.Batch;
 import org.apache.spark.sql.connector.read.Scan;
 import org.apache.spark.sql.connector.read.streaming.MicroBatchStream;
@@ -59,14 +58,14 @@ public class SeaTunnelScan implements Scan {
     }
 
     @Override
-    public CustomMetric[] supportedCustomMetrics() {
-        return new CustomMetric[] {new SourceReceivedCountMetric()};
-    }
-
-    @Override
     public Batch toBatch() {
         Map<String, String> envOptions = caseInsensitiveStringMap.asCaseSensitiveMap();
-        return new SeaTunnelBatch(source, parallelism, jobId, envOptions);
+        return new SeaTunnelBatch(
+                source,
+                parallelism,
+                jobId,
+                envOptions,
+                SeaTunnelSparkMetrics.sourceCounter(jobId));
     }
 
     @Override

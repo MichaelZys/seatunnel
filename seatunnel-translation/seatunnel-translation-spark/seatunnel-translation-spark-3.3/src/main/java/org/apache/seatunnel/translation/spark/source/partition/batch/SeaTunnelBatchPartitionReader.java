@@ -18,20 +18,24 @@
 package org.apache.seatunnel.translation.spark.source.partition.batch;
 
 import org.apache.spark.sql.catalyst.InternalRow;
-import org.apache.spark.sql.connector.metric.CustomTaskMetric;
 import org.apache.spark.sql.connector.read.PartitionReader;
+import org.apache.spark.util.LongAccumulator;
 
 import java.io.IOException;
-
-import static org.apache.seatunnel.translation.spark.metrics.SeaTunnelSparkMetrics.SOURCE_RECEIVED_COUNT;
 
 public class SeaTunnelBatchPartitionReader implements PartitionReader<InternalRow> {
 
     private final ParallelBatchPartitionReader partitionReader;
-    private long receivedCount;
+    private final LongAccumulator sourceCounter;
 
     public SeaTunnelBatchPartitionReader(ParallelBatchPartitionReader partitionReader) {
+        this(partitionReader, new LongAccumulator());
+    }
+
+    public SeaTunnelBatchPartitionReader(
+            ParallelBatchPartitionReader partitionReader, LongAccumulator sourceCounter) {
         this.partitionReader = partitionReader;
+        this.sourceCounter = sourceCounter;
     }
 
     @Override
@@ -40,26 +44,9 @@ public class SeaTunnelBatchPartitionReader implements PartitionReader<InternalRo
     }
 
     @Override
-    public CustomTaskMetric[] currentMetricsValues() {
-        return new CustomTaskMetric[] {
-            new CustomTaskMetric() {
-                @Override
-                public String name() {
-                    return SOURCE_RECEIVED_COUNT;
-                }
-
-                @Override
-                public long value() {
-                    return receivedCount;
-                }
-            }
-        };
-    }
-
-    @Override
     public InternalRow get() {
         InternalRow row = partitionReader.get();
-        receivedCount++;
+        sourceCounter.add(1L);
         return row;
     }
 

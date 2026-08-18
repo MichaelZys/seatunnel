@@ -18,11 +18,10 @@
 package org.apache.seatunnel.translation.spark.source.partition.batch;
 
 import org.apache.spark.sql.catalyst.InternalRow;
-import org.apache.spark.sql.connector.metric.CustomTaskMetric;
+import org.apache.spark.util.LongAccumulator;
 
 import org.junit.jupiter.api.Test;
 
-import static org.apache.seatunnel.translation.spark.metrics.SeaTunnelSparkMetrics.SOURCE_RECEIVED_COUNT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -38,7 +37,9 @@ class SeaTunnelBatchPartitionReaderTest {
         InternalRow second = mock(InternalRow.class);
         when(delegate.next()).thenReturn(true, true, false);
         when(delegate.get()).thenReturn(first, second);
-        SeaTunnelBatchPartitionReader reader = new SeaTunnelBatchPartitionReader(delegate);
+        LongAccumulator sourceCounter = new LongAccumulator();
+        SeaTunnelBatchPartitionReader reader =
+                new SeaTunnelBatchPartitionReader(delegate, sourceCounter);
 
         assertTrue(reader.next());
         assertEquals(first, reader.get());
@@ -46,8 +47,6 @@ class SeaTunnelBatchPartitionReaderTest {
         assertEquals(second, reader.get());
         assertFalse(reader.next());
 
-        CustomTaskMetric metric = reader.currentMetricsValues()[0];
-        assertEquals(SOURCE_RECEIVED_COUNT, metric.name());
-        assertEquals(2L, metric.value());
+        assertEquals(2L, sourceCounter.value());
     }
 }

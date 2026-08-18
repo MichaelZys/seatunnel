@@ -20,10 +20,8 @@ package org.apache.seatunnel.translation.spark.sink.write;
 import org.apache.seatunnel.api.sink.SeaTunnelSink;
 import org.apache.seatunnel.api.table.catalog.CatalogTable;
 import org.apache.seatunnel.api.table.type.SeaTunnelRow;
-import org.apache.seatunnel.translation.spark.metrics.SeaTunnelSparkMetrics.SinkWriteCountMetric;
 import org.apache.seatunnel.translation.spark.sink.SeaTunnelBatchWrite;
 
-import org.apache.spark.sql.connector.metric.CustomMetric;
 import org.apache.spark.sql.connector.write.BatchWrite;
 import org.apache.spark.sql.connector.write.Write;
 import org.apache.spark.sql.connector.write.streaming.StreamingWrite;
@@ -52,11 +50,6 @@ public class SeaTunnelWrite<AggregatedCommitInfoT, CommitInfoT, StateT> implemen
         } catch (IOException e) {
             throw new RuntimeException("SeaTunnel Spark sink create batch failed", e);
         }
-    }
-
-    @Override
-    public CustomMetric[] supportedCustomMetrics() {
-        return new CustomMetric[] {new SinkWriteCountMetric()};
     }
 
     @Override

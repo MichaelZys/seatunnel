@@ -24,6 +24,7 @@ import org.apache.seatunnel.api.table.type.SeaTunnelRow;
 import org.apache.spark.sql.connector.read.Batch;
 import org.apache.spark.sql.connector.read.InputPartition;
 import org.apache.spark.sql.connector.read.PartitionReaderFactory;
+import org.apache.spark.util.LongAccumulator;
 
 import java.util.Map;
 
@@ -35,16 +36,19 @@ public class SeaTunnelBatch implements Batch {
     private final int parallelism;
     private final String jobId;
     private final Map<String, String> envOptions;
+    private final LongAccumulator sourceCounter;
 
     public SeaTunnelBatch(
             SeaTunnelSource<SeaTunnelRow, ?, ?> source,
             int parallelism,
             String jobId,
-            Map<String, String> envOptions) {
+            Map<String, String> envOptions,
+            LongAccumulator sourceCounter) {
         this.source = source;
         this.parallelism = parallelism;
         this.jobId = jobId;
         this.envOptions = envOptions;
+        this.sourceCounter = sourceCounter;
     }
 
     @Override
@@ -64,6 +68,7 @@ public class SeaTunnelBatch implements Batch {
 
     @Override
     public PartitionReaderFactory createReaderFactory() {
-        return new SeaTunnelBatchPartitionReaderFactory(source, parallelism, jobId, envOptions);
+        return new SeaTunnelBatchPartitionReaderFactory(
+                source, parallelism, jobId, envOptions, sourceCounter);
     }
 }

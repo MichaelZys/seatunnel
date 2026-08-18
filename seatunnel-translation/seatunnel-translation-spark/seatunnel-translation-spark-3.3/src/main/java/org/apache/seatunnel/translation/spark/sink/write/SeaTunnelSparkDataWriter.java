@@ -27,7 +27,6 @@ import org.apache.seatunnel.translation.serialization.RowConverter;
 import org.apache.seatunnel.translation.spark.serialization.InternalRowConverter;
 
 import org.apache.spark.sql.catalyst.InternalRow;
-import org.apache.spark.sql.connector.metric.CustomTaskMetric;
 import org.apache.spark.sql.connector.write.DataWriter;
 import org.apache.spark.sql.connector.write.WriterCommitMessage;
 
@@ -38,8 +37,6 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Optional;
-
-import static org.apache.seatunnel.translation.spark.metrics.SeaTunnelSparkMetrics.SINK_WRITE_COUNT;
 
 @Slf4j
 public class SeaTunnelSparkDataWriter<CommitInfoT, StateT> implements DataWriter<InternalRow> {
@@ -69,23 +66,6 @@ public class SeaTunnelSparkDataWriter<CommitInfoT, StateT> implements DataWriter
     public void write(InternalRow record) throws IOException {
         sinkWriter.write(rowConverter.reconvert(record));
         writtenCount++;
-    }
-
-    @Override
-    public CustomTaskMetric[] currentMetricsValues() {
-        return new CustomTaskMetric[] {
-            new CustomTaskMetric() {
-                @Override
-                public String name() {
-                    return SINK_WRITE_COUNT;
-                }
-
-                @Override
-                public long value() {
-                    return writtenCount;
-                }
-            }
-        };
     }
 
     private void initResourceManger() {

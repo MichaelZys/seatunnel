@@ -25,6 +25,7 @@ import org.apache.spark.sql.catalyst.InternalRow;
 import org.apache.spark.sql.connector.read.InputPartition;
 import org.apache.spark.sql.connector.read.PartitionReader;
 import org.apache.spark.sql.connector.read.PartitionReaderFactory;
+import org.apache.spark.util.LongAccumulator;
 
 import java.util.Map;
 
@@ -35,16 +36,19 @@ public class SeaTunnelBatchPartitionReaderFactory implements PartitionReaderFact
     private final int parallelism;
     private final String jobId;
     private final Map<String, String> envOptions;
+    private final LongAccumulator sourceCounter;
 
     public SeaTunnelBatchPartitionReaderFactory(
             SeaTunnelSource<SeaTunnelRow, ?, ?> source,
             int parallelism,
             String jobId,
-            Map<String, String> envOptions) {
+            Map<String, String> envOptions,
+            LongAccumulator sourceCounter) {
         this.source = source;
         this.parallelism = parallelism;
         this.jobId = jobId;
         this.envOptions = envOptions;
+        this.sourceCounter = sourceCounter;
     }
 
     @Override
@@ -61,6 +65,6 @@ public class SeaTunnelBatchPartitionReaderFactory implements PartitionReaderFact
                     new ParallelBatchPartitionReader(
                             source, parallelism, jobId, partitionId, envOptions);
         }
-        return new SeaTunnelBatchPartitionReader(partitionReader);
+        return new SeaTunnelBatchPartitionReader(partitionReader, sourceCounter);
     }
 }

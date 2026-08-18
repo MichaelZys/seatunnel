@@ -40,7 +40,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.OptionalLong;
 import java.util.stream.Collectors;
+
+import static org.apache.seatunnel.translation.spark.metrics.SeaTunnelSparkMetrics.takeSourceCount;
 
 @Slf4j
 public class SeaTunnelBatchWrite<StateT, CommitInfoT, AggregatedCommitInfoT>
@@ -93,7 +96,20 @@ public class SeaTunnelBatchWrite<StateT, CommitInfoT, AggregatedCommitInfoT>
                 throw new RuntimeException("SinkAggregatedCommitter commit failed in driver", e);
             }
         }
-        log.info("SeaTunnel Spark metric: SinkWriteCount={}", sumWrittenCount(messages));
+        long sinkWriteCount = sumWrittenCount(messages);
+        OptionalLong sourceReceivedCount = takeSourceCount(jobId);
+        if (sourceReceivedCount.isPresent()) {
+            long readCount = sourceReceivedCount.getAsLong();
+            log.info(
+                    "SeaTunnel Spark metric: SourceReceivedCount={}, SinkWriteCount={}, DifferenceCount={}",
+                    readCount,
+                    sinkWriteCount,
+                    readCount - sinkWriteCount);
+        } else {
+            log.warn(
+                    "SeaTunnel Spark metric: SourceReceivedCount=unknown, SinkWriteCount={}",
+                    sinkWriteCount);
+        }
     }
 
     @Override
